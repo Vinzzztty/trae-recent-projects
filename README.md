@@ -4,7 +4,7 @@ Control Trae directly from Raycast
 
 [![raycast-cross-extension-badge]][raycast-cross-extension-link]
 
-![Trae screenshot](assets/preview.jpeg)
+![Trae screenshot](metadata/preview.jpeg)
 
 ## What is this extension
 
