@@ -6,8 +6,7 @@
   "icon": "trae.png",
   "author": "vinzzztty",
   "platforms": [
-    "macOS",
-    "Windows"
+    "macOS"
   ],
   "categories": [
     "Developer Tools"
