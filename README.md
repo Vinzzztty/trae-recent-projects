@@ -1,16 +1,62 @@
 # Trae
 
-Control Trae directly from Raycast
+Control [Trae](https://trae.app) directly from Raycast - A powerful code editor built on open-source foundations.
 
 [![raycast-cross-extension-badge]][raycast-cross-extension-link]
 
-![Trae screenshot](metadata/preview.jpeg)
+![Trae screenshot](metadata/preview.png)
 
-## What is this extension
+## Features
 
-- Search Trae Recent Projects
-- Use `Open with Trae` command
-- Use `Open New Window` command
+This extension provides three powerful commands to streamline your workflow with Trae:
+
+### 1. Search Trae Recent Projects
+Quickly search and open your recently accessed projects in Trae. Features include:
+- 🔍 **Fast Search**: Instantly filter through your recent projects
+- 🌿 **Git Branch Display**: See the current git branch for each project at a glance
+- 📁 **Multiple Actions**: Open in Trae, reveal in Finder, or copy the project path
+- ⚡ **Real-time Updates**: Automatically detects projects opened via CLI (`trae .`) or through the extension
+- 🕐 **Last Accessed Time**: View when you last worked on each project
+
+### 2. Open with Trae
+Open the currently selected folder from Finder or Path Finder directly in Trae:
+- Works with both **Finder** and **Path Finder**
+- Supports multiple folder selections
+- Automatically tracks opened projects for quick access later
+
+### 3. Open New Window
+Quickly open a new empty window in Trae:
+- Multiple fallback strategies ensure it works reliably
+- Starts with a clean workspace ready for your next project
+
+## Screencast
+
+### Search Trae Recent Projects
+
+![Search Trae Recent Projects](https://github.com/Vinzzztty/trae-recent-projects/blob/upload-video/search-trae-recent-projects.gif)
+
+### Open with Trae
+
+![Open with Trae](https://github.com/Vinzzztty/trae-recent-projects/blob/upload-video/search-trae-recent-projects.gif)
+
+### Open New Window
+
+![Open New Window](https://github.com/Vinzzztty/trae-recent-projects/blob/upload-video/Open%20New%20Window%20Trae.gif)
+
+## Requirements
+
+- [Trae](https://trae.app) application installed on your Mac
+- macOS (this extension is designed specifically for macOS)
+
+## Installation
+
+Install this extension from the [Raycast Store](https://raycast.com/vinzzztty/trae).
+
+## Configuration
+
+After installation, you can configure:
+- **Trae Application**: Select your Trae app location (default: `/Applications/Trae.app`)
+- **Projects Root Directory**: Set the root folder for project scanning (default: `~/Projects`)
 
 ## API
 
