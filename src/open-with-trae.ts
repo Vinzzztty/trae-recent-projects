@@ -6,6 +6,7 @@ import {
   getFrontmostApplication,
   getPreferenceValues,
   LocalStorage,
+  Application,
 } from "@raycast/api";
 import { runAppleScript } from "@raycast/utils";
 import { getCurrentFinderPath as getCurrentFinderPathFromUtils } from "./utils/apple-scripts";
@@ -15,8 +16,7 @@ import fs from "node:fs/promises";
 const exec = promisify(_exec);
 
 type Preferences = {
-  traeAppName?: string;
-  traeBundleId?: string;
+  traeApp?: Application;
 };
 
 async function getSelectedPathFinderItems(): Promise<string[]> {
@@ -41,25 +41,37 @@ async function getCurrentFinderPath(): Promise<string> {
   return (path || "").trim();
 }
 
+async function getGitBranch(projectPath: string): Promise<string | undefined> {
+  try {
+    const { stdout } = await exec(`cd "${projectPath}" && git branch --show-current 2>/dev/null`);
+    const branch = stdout.trim();
+    return branch || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function openPathWithTrae(projectPath: string) {
   const prefs = getPreferenceValues<Preferences>();
-  const appName = prefs.traeAppName?.trim() || "Trae";
-  const bundleId = prefs.traeBundleId?.trim();
+  const traeAppPath = prefs.traeApp?.path || "/Applications/Trae.app";
 
-  if (bundleId) {
-    await exec(`open -b ${bundleId} "${projectPath}"`);
-  } else {
-    await exec(`open -a "${appName}" "${projectPath}"`);
-  }
+  await exec(`open -a "${traeAppPath}" "${projectPath}"`);
+
   const recent = (await LocalStorage.getItem<string>("trae_recent_projects")) || "[]";
-  let parsed: { name: string; path: string; mtimeMs: number }[] = [];
+  let parsed: { name: string; path: string; mtimeMs: number; gitBranch?: string }[] = [];
   try {
     parsed = JSON.parse(recent);
   } catch {
     parsed = [];
   }
   parsed = parsed.filter((x) => x.path !== projectPath);
-  parsed.unshift({ name: projectPath.split("/").pop() || projectPath, path: projectPath, mtimeMs: Date.now() });
+  const gitBranch = await getGitBranch(projectPath);
+  parsed.unshift({
+    name: projectPath.split("/").pop() || projectPath,
+    path: projectPath,
+    mtimeMs: Date.now(),
+    gitBranch,
+  });
   await LocalStorage.setItem("trae_recent_projects", JSON.stringify(parsed.slice(0, 100)));
 }
 

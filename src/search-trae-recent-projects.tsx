@@ -8,71 +8,100 @@ import {
   getPreferenceValues,
   showToast,
   Toast,
-  open,
   closeMainWindow,
+  Application,
 } from "@raycast/api";
-import { runAppleScript } from "@raycast/utils";
 import { useEffect, useState } from "react";
 import path from "node:path";
 
 import { exec as _exec } from "node:child_process";
 import { promisify } from "node:util";
+import fs from "node:fs/promises";
 const exec = promisify(_exec);
 
 type Preferences = {
   projectsRoot?: string;
-  traeAppName?: string;
-  traeBundleId?: string;
+  traeApp?: Application;
 };
 
 type Project = {
   name: string;
   path: string;
   mtimeMs: number;
+  gitBranch?: string;
 };
 
-function toTildePath(p: string) {
+function smartTruncatePath(fullPath: string): string {
   const home = process.env.HOME || "";
-  if (home && p.startsWith(home)) return `~${p.slice(home.length)}`;
-  return p;
+  let p = fullPath;
+
+  // Replace home with ~
+  if (home && p.startsWith(home)) {
+    p = `~${p.slice(home.length)}`;
+  }
+
+  // Split path into parts
+  const parts = p.split("/").filter((part) => part.length > 0);
+
+  // If path is short enough, return as is
+  if (parts.length <= 3) {
+    return p;
+  }
+
+  // Keep last 2 directories before the project name
+  // Example: ~/A/B/C/D/E/project -> ~/D/E/project
+  const lastParts = parts.slice(-3); // Last 3 parts (2 dirs + project name)
+  return `~/${lastParts.join("/")}`;
 }
 
-async function getTraeRecentPaths(appName: string, bundleId?: string): Promise<string[]> {
-  const useBundleId = !!bundleId && bundleId.toLowerCase() !== "undefined" && bundleId.toLowerCase() !== "null";
-  const tellLine = useBundleId ? `tell application id "${bundleId}"` : `tell application "${appName}"`;
-  const script = `
-    try
-      set pList to {}
-      ${tellLine}
-        set docs to (get recent documents)
-      end tell
-      repeat with d in docs
-        try
-          set end of pList to POSIX path of (path of d)
-        end try
-      end repeat
-      set text item delimiters to ","
-      return pList as text
-    on error
-      return ""
-    end try
-  `;
-  const out = await runAppleScript(script);
-  return out
-    .split(",")
-    .map((p) => p.trim())
-    .filter((p) => p.length > 0);
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 1) + "…";
+}
+
+async function getGitBranch(projectPath: string): Promise<string | undefined> {
+  try {
+    const { stdout } = await exec(`cd "${projectPath}" && git branch --show-current 2>/dev/null`);
+    const branch = stdout.trim();
+    return branch || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function getTraeRecentPaths(): Promise<string[]> {
+  try {
+    const storagePath = path.join(
+      process.env.HOME || "",
+      "Library/Application Support/Trae/User/globalStorage/storage.json",
+    );
+    const content = await fs.readFile(storagePath, "utf-8");
+    const data = JSON.parse(content);
+
+    const folders = data?.backupWorkspaces?.folders || [];
+    const paths: string[] = [];
+
+    for (const folder of folders) {
+      if (folder.folderUri && folder.folderUri.startsWith("file://")) {
+        // Decode URI and remove file:// prefix
+        const decodedPath = decodeURIComponent(folder.folderUri.replace("file://", ""));
+        paths.push(decodedPath);
+      }
+    }
+
+    return paths;
+  } catch {
+    // If reading storage.json fails, return empty array
+    return [];
+  }
 }
 
 async function openWithTrae(projectPath: string) {
   const prefs = getPreferenceValues<Preferences>();
-  const appName = prefs.traeAppName?.trim() || "Trae";
-  const bundleId = prefs.traeBundleId?.trim();
-  if (bundleId) {
-    await exec(`open -b ${bundleId} "${projectPath}"`);
-  } else {
-    await open(projectPath, appName);
-  }
+  const traeAppPath = prefs.traeApp?.path || "/Applications/Trae.app";
+
+  await exec(`open -a "${traeAppPath}" "${projectPath}"`);
+
   const recent = (await LocalStorage.getItem<string>("trae_recent_projects")) || "[]";
   let parsed: Project[] = [];
   try {
@@ -81,7 +110,8 @@ async function openWithTrae(projectPath: string) {
     parsed = [];
   }
   const existing = parsed.filter((p) => p.path !== projectPath);
-  existing.unshift({ name: path.basename(projectPath), path: projectPath, mtimeMs: Date.now() });
+  const gitBranch = await getGitBranch(projectPath);
+  existing.unshift({ name: path.basename(projectPath), path: projectPath, mtimeMs: Date.now(), gitBranch });
   await LocalStorage.setItem("trae_recent_projects", JSON.stringify(existing.slice(0, 100)));
 }
 
@@ -94,10 +124,9 @@ async function refreshItems(setItems: (items: Project[]) => void) {
     } catch {
       recentList = [];
     }
-    const prefs = getPreferenceValues<{ traeAppName?: string; traeBundleId?: string }>();
     let traePaths: string[] = [];
     try {
-      traePaths = await getTraeRecentPaths(prefs.traeAppName?.trim() || "Trae", prefs.traeBundleId?.trim());
+      traePaths = await getTraeRecentPaths();
     } catch {
       traePaths = [];
     }
@@ -111,7 +140,16 @@ async function refreshItems(setItems: (items: Project[]) => void) {
       return acc;
     }, []);
     const sorted = merged.sort((a, b) => b.mtimeMs - a.mtimeMs);
-    setItems(sorted);
+
+    // Fetch git branches for all projects
+    const projectsWithBranches = await Promise.all(
+      sorted.map(async (project) => ({
+        ...project,
+        gitBranch: await getGitBranch(project.path),
+      })),
+    );
+
+    setItems(projectsWithBranches);
   } catch {
     // silent
   }
@@ -149,7 +187,7 @@ export default function Command() {
   useEffect(() => {
     const id = setInterval(() => {
       refreshItems(setItems);
-    }, 1000);
+    }, 500);
     return () => clearInterval(id);
   }, []);
 
@@ -159,9 +197,19 @@ export default function Command() {
         <List.Item
           key={p.path}
           title={path.basename(p.path)}
-          subtitle={toTildePath(p.path)}
+          subtitle={smartTruncatePath(p.path)}
           icon={Icon.Folder}
-          accessories={[{ date: new Date(p.mtimeMs), icon: { source: Icon.Clock, tintColor: Color.SecondaryText } }]}
+          accessories={[
+            ...(p.gitBranch
+              ? [
+                  {
+                    tag: { value: truncateText(p.gitBranch, 20), color: Color.Green },
+                    tooltip: `Git Branch: ${p.gitBranch}`,
+                  },
+                ]
+              : []),
+            { date: new Date(p.mtimeMs), icon: { source: Icon.Clock, tintColor: Color.SecondaryText } },
+          ]}
           actions={
             <ActionPanel>
               <Action

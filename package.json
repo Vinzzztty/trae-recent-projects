@@ -3,7 +3,7 @@
   "name": "trae",
   "title": "Trae",
   "description": "Control Trae, Trae & Codium directly from Raycast",
-  "icon": "trae.png",
+  "icon": "trae-new.png",
   "author": "vinzzztty",
   "platforms": [
     "macOS"
@@ -35,18 +35,11 @@
   ],
   "preferences": [
     {
-      "name": "traeAppName",
-      "title": "Trae App Name",
-      "description": "Application name used by macOS to open projects",
-      "type": "textfield",
-      "default": "Trae",
-      "required": false
-    },
-    {
-      "name": "traeBundleId",
-      "title": "Trae Bundle ID",
-      "description": "Optional bundle identifier, e.g. com.company.Trae",
-      "type": "textfield",
+      "name": "traeApp",
+      "title": "Trae Application",
+      "description": "Select the Trae application to use",
+      "type": "appPicker",
+      "default": "/Applications/Trae.app",
       "required": false
     },
     {
