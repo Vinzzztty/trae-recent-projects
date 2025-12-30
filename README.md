@@ -33,15 +33,15 @@ Quickly open a new empty window in Trae:
 
 ### Search Trae Recent Projects
 
-![Search Trae Recent Projects](https://github.com/Vinzzztty/trae-recent-projects/blob/upload-video/search-trae-recent-projects.gif)
+![Search Trae Recent Projects](https://github.com/Vinzzztty/trae-recent-projects/search-trae-recent-projects.gif)
 
 ### Open with Trae
 
-![Open with Trae](https://github.com/Vinzzztty/trae-recent-projects/blob/upload-video/search-trae-recent-projects.gif)
+![Open with Trae](https://github.com/Vinzzztty/trae-recent-projects/search-trae-recent-projects.gif)
 
 ### Open New Window
 
-![Open New Window](https://github.com/Vinzzztty/trae-recent-projects/blob/upload-video/Open%20New%20Window%20Trae.gif)
+![Open New Window](https://github.com/Vinzzztty/trae-recent-projects/Open%20New%20Window%20Trae.gif)
 
 ## Requirements
 
