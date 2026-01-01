@@ -1,6 +1,6 @@
 # Trae
 
-Control [Trae](https://trae.app) directly from Raycast - A powerful code editor built on open-source foundations.
+Control [Trae](https://www.trae.ai/) directly from Raycast - A powerful code editor built on open-source foundations.
 
 [![raycast-cross-extension-badge]][raycast-cross-extension-link]
 
@@ -33,15 +33,15 @@ Quickly open a new empty window in Trae:
 
 ### Search Trae Recent Projects
 
-![Search Trae Recent Projects](https://github.com/Vinzzztty/trae-recent-projects/search-trae-recent-projects.gif)
+![Search Trae Recent Projects](media/search-trae-recent-projects.gif)
 
 ### Open with Trae
 
-![Open with Trae](https://github.com/Vinzzztty/trae-recent-projects/search-trae-recent-projects.gif)
+![Open with Trae](media/open-trae.gif)
 
 ### Open New Window
 
-![Open New Window](https://github.com/Vinzzztty/trae-recent-projects/Open%20New%20Window%20Trae.gif)
+![Open New Window](media/open-new-window.gif)
 
 ## Requirements
 

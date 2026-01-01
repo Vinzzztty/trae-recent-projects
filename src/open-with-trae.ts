@@ -6,7 +6,6 @@ import {
   getFrontmostApplication,
   getPreferenceValues,
   LocalStorage,
-  Application,
 } from "@raycast/api";
 import { runAppleScript } from "@raycast/utils";
 import { getCurrentFinderPath as getCurrentFinderPathFromUtils } from "./utils/apple-scripts";
@@ -14,10 +13,6 @@ import { exec as _exec } from "node:child_process";
 import { promisify } from "node:util";
 import fs from "node:fs/promises";
 const exec = promisify(_exec);
-
-type Preferences = {
-  traeApp?: Application;
-};
 
 async function getSelectedPathFinderItems(): Promise<string[]> {
   const script = `

@@ -9,20 +9,14 @@ import {
   showToast,
   Toast,
   closeMainWindow,
-  Application,
 } from "@raycast/api";
-import { useEffect, useState } from "react";
+import { usePromise } from "@raycast/utils";
 import path from "node:path";
 
 import { exec as _exec } from "node:child_process";
 import { promisify } from "node:util";
 import fs from "node:fs/promises";
 const exec = promisify(_exec);
-
-type Preferences = {
-  projectsRoot?: string;
-  traeApp?: Application;
-};
 
 type Project = {
   name: string;
@@ -115,84 +109,43 @@ async function openWithTrae(projectPath: string) {
   await LocalStorage.setItem("trae_recent_projects", JSON.stringify(existing.slice(0, 100)));
 }
 
-async function refreshItems(setItems: (items: Project[]) => void) {
-  try {
-    const recent = (await LocalStorage.getItem<string>("trae_recent_projects")) || "[]";
-    let recentList: Project[] = [];
-    try {
-      recentList = JSON.parse(recent);
-    } catch {
-      recentList = [];
-    }
-    let traePaths: string[] = [];
-    try {
-      traePaths = await getTraeRecentPaths();
-    } catch {
-      traePaths = [];
-    }
-    const traeRecentProjects: Project[] = traePaths.map((pth) => ({
-      name: path.basename(pth),
-      path: pth,
-      mtimeMs: Date.now(),
-    }));
-    const merged = [...recentList, ...traeRecentProjects].reduce<Project[]>((acc, p) => {
-      if (!acc.find((x) => x.path === p.path)) acc.push(p);
-      return acc;
-    }, []);
-    const sorted = merged.sort((a, b) => b.mtimeMs - a.mtimeMs);
+async function getRecentProjects(): Promise<Project[]> {
+  const recent = (await LocalStorage.getItem<string>("trae_recent_projects")) || "[]";
+  const recentList: Project[] = JSON.parse(recent);
+  const traePaths = await getTraeRecentPaths();
 
-    // Fetch git branches for all projects
-    const projectsWithBranches = await Promise.all(
-      sorted.map(async (project) => ({
-        ...project,
-        gitBranch: await getGitBranch(project.path),
-      })),
-    );
+  const traeRecentProjects: Project[] = traePaths.map((pth) => ({
+    name: path.basename(pth),
+    path: pth,
+    mtimeMs: Date.now(),
+  }));
 
-    setItems(projectsWithBranches);
-  } catch {
-    // silent
-  }
+  const merged = [...recentList, ...traeRecentProjects].reduce<Project[]>((acc, p) => {
+    if (!acc.find((x) => x.path === p.path)) acc.push(p);
+    return acc;
+  }, []);
+
+  const sorted = merged.sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+  const projectsWithBranches = await Promise.all(
+    sorted.map(async (project) => ({
+      ...project,
+      gitBranch: await getGitBranch(project.path),
+    })),
+  );
+
+  return projectsWithBranches;
 }
 
 export default function Command() {
-  const [items, setItems] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const recent = (await LocalStorage.getItem<string>("trae_recent_projects")) || "[]";
-        let recentList: Project[] = [];
-        try {
-          recentList = JSON.parse(recent);
-        } catch {
-          recentList = [];
-        }
-        const sortedInitial = recentList.sort((a, b) => b.mtimeMs - a.mtimeMs);
-        setItems(sortedInitial);
-        await refreshItems(setItems);
-      } catch (error) {
-        await showToast({
-          style: Toast.Style.Failure,
-          title: "Failed to load projects",
-          message: error instanceof Error ? error.message : String(error),
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-  useEffect(() => {
-    const id = setInterval(() => {
-      refreshItems(setItems);
-    }, 500);
-    return () => clearInterval(id);
-  }, []);
+  const { isLoading, data: items = [] } = usePromise(getRecentProjects, [], {
+    failureToastOptions: {
+      title: "Failed to load projects",
+    },
+  });
 
   return (
-    <List isLoading={loading} searchBarPlaceholder="Search projects…">
+    <List isLoading={isLoading} searchBarPlaceholder="Search projects…">
       {items.map((p: Project) => (
         <List.Item
           key={p.path}
@@ -234,7 +187,7 @@ export default function Command() {
           }
         />
       ))}
-      {items.length === 0 && !loading && (
+      {items.length === 0 && !isLoading && (
         <List.EmptyView
           title="No projects found"
           description="Set your Projects Root in preferences or start opening projects with Trae."

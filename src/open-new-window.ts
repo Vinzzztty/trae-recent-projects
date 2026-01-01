@@ -1,13 +1,9 @@
-import { getPreferenceValues, showToast, Toast, closeMainWindow, Application } from "@raycast/api";
+import { getPreferenceValues, showToast, Toast, closeMainWindow } from "@raycast/api";
 import { runAppleScript } from "@raycast/utils";
 import { exec as _exec } from "node:child_process";
 import { promisify } from "node:util";
 
 const exec = promisify(_exec);
-
-type Preferences = {
-  traeApp?: Application;
-};
 
 export default async function Command() {
   const prefs = getPreferenceValues<Preferences>();
